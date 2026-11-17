@@ -1,0 +1,299 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7fb;
+  color: #1e293b;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  background: #172554;
+  color: white;
+  padding: 30px 20px;
+}
+
+.sidebar h2 {
+  margin-bottom: 35px;
+  font-size: 25px;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar nav a {
+  color: #cbd5e1;
+  text-decoration: none;
+  padding: 13px;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+.sidebar nav a:hover,
+.sidebar nav a.active {
+  background: #2563eb;
+  color: white;
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px;
+}
+
+.main-content h1 {
+  font-size: 30px;
+  margin-bottom: 15px;
+}
+
+.main-content p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .sidebar nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .main-content {
+    padding: 24px;
+  }
+}
+
+/* Chatbot */
+
+.chatbot-page {
+  max-width: 950px;
+}
+
+.chat-messages {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 25px;
+  min-height: 350px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.chat-message {
+  background: #f1f5f9;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.chat-message strong {
+  color: #1d4ed8;
+}
+
+.chat-message p {
+  margin-top: 8px;
+  white-space: pre-wrap;
+}
+
+.chat-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.chat-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+}
+
+.chat-form input:focus {
+  border-color: #2563eb;
+}
+
+.chat-form button {
+  padding: 14px 25px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+
+.chat-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #dc2626;
+  margin-top: 12px;
+}
+
+/* Document Upload */
+
+.upload-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 25px;
+  padding: 25px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.upload-form input,
+.coding-form input,
+.coding-form select,
+.coding-form textarea,
+.learning-form input {
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+}
+
+.upload-form button,
+.coding-form button,
+.learning-form button,
+.learning-result button {
+  padding: 12px 20px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 7px;
+}
+
+.success-message {
+  color: #15803d;
+  margin-top: 15px;
+}
+
+/* Coding Assistant */
+
+.coding-page,
+.learning-page {
+  max-width: 950px;
+}
+
+.coding-form,
+.learning-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 25px;
+  padding: 25px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.coding-form label,
+.learning-form label {
+  font-weight: bold;
+}
+
+.coding-form textarea {
+  resize: vertical;
+  font-family: Consolas, monospace;
+}
+
+.coding-response,
+.learning-result {
+  margin-top: 25px;
+  padding: 25px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.coding-response pre,
+.learning-result pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-top: 15px;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.learning-result p {
+  margin-top: 12px;
+}
+
+/* Dashboard */
+
+.dashboard {
+  max-width: 1100px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-top: 35px;
+}
+
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 28px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  color: #1e293b;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.feature-card svg {
+  color: #2563eb;
+}
+
+.feature-card h2 {
+  font-size: 20px;
+}
+
+.feature-card p {
+  line-height: 1.6;
+}
+
+.feature-card span {
+  color: #2563eb;
+  font-weight: bold;
+}
+
+@media (max-width: 700px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

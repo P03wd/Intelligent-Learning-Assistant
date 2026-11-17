@@ -1,0 +1,6 @@
+Python is a programming language.
+
+Machine Learning allows computers to learn from data.
+
+Retrieval Augmented Generation uses external documents
+to provide relevant answers to user questions.

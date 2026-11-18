@@ -15,7 +15,7 @@ An AI-powered learning platform that helps learners understand course materials,
 - Supports PDF, DOCX, and TXT files.
 - Extracts and cleans document text.
 - Splits content into overlapping chunks.
-- Generates embeddings using Sentence Transformers.
+- Generates embeddings using FastEmbed with the all-MiniLM-L6-v2 model.
 - Stores and retrieves vectors using FAISS.
 
 ### 3. Coding Assistant
@@ -37,7 +37,7 @@ An AI-powered learning platform that helps learners understand course materials,
 | Frontend | React, Vite, JavaScript |
 | Backend | Python, FastAPI |
 | LLM | Groq API |
-| Embeddings | Sentence Transformers |
+| Embeddings | FastEmbed (ONNX Runtime) |
 | Vector Database | FAISS |
 | Database | PostgreSQL |
 | ORM | SQLAlchemy |

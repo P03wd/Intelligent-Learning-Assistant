@@ -53,18 +53,7 @@ def ask_question(
             db.add(conversation)
             db.flush()
 
-        # Retrieve relevant course content.
-        retrieved_chunks = search_knowledge_base(
-            request.question,
-            top_k=request.top_k
-        )
-
-        relevant_chunks = [
-            chunk for chunk in retrieved_chunks
-            if chunk["similarity_score"] >= MIN_SIMILARITY_SCORE
-        ]
-
-        # Load recent messages from the database.
+        # Load recent conversation messages before retrieval.
         previous_messages = (
             db.query(ChatMessage)
             .filter(ChatMessage.conversation_id == conversation.id)
@@ -90,6 +79,64 @@ def ask_question(
                 message.model_dump()
                 for message in request.conversation_history
             ]
+
+        # Build a retrieval query using previous user context
+        # for short follow-up questions.
+        retrieval_query = request.question
+
+        follow_up_phrases = (
+            "explain that",
+            "explain this",
+            "tell me more",
+            "elaborate",
+            "in simple words",
+            "simplify that",
+            "what about that",
+            "can you explain",
+            "give an example",
+        )
+
+        is_follow_up = (
+            len(request.question.split()) <= 12
+            or any(
+                phrase in request.question.lower()
+                for phrase in follow_up_phrases
+            )
+        )
+
+        if is_follow_up and history:
+            previous_user_questions = [
+                message["content"]
+                for message in history
+                if message.get("role") == "user"
+            ]
+
+            previous_assistant_answers = [
+                message["content"]
+                for message in history
+                if message.get("role") == "assistant"
+            ]
+
+            if previous_user_questions:
+                retrieval_query = previous_user_questions[-1]
+
+                # Include the previous answer to preserve
+                # the subject of the follow-up.
+                if previous_assistant_answers:
+                    retrieval_query += " " + previous_assistant_answers[-1]
+
+                retrieval_query += " " + request.question
+
+        # Retrieve relevant course content.
+        retrieved_chunks = search_knowledge_base(
+            retrieval_query,
+            top_k=request.top_k
+        )
+
+        relevant_chunks = [
+            chunk for chunk in retrieved_chunks
+            if chunk["similarity_score"] >= MIN_SIMILARITY_SCORE
+        ]
 
         # Generate a grounded answer using Groq.
         ai_service = LLMService()

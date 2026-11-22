@@ -1,6 +1,8 @@
 
 import { useState } from "react";
 import api from "../services/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 function CodingAssistant() {
   const [language, setLanguage] = useState("python");
@@ -83,11 +85,13 @@ function CodingAssistant() {
       {error && <p className="error-message">{error}</p>}
 
       {response && (
-        <div className="coding-response">
-          <h2>AI Response</h2>
-          <pre>{response}</pre>
-        </div>
-      )}
+  <div className="coding-response">
+    <h2>AI Response</h2>
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+      {response}
+    </ReactMarkdown>
+  </div>
+)}
     </div>
   );
 }

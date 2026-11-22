@@ -1,99 +1,111 @@
 
 import uuid
 from pathlib import Path
-from fastapi import Depends
+
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Document
-
-from fastapi import APIRouter, UploadFile, File, HTTPException
-
+from models import Document, User
+from dependencies import get_current_user
 from config import UPLOAD_DIR
-from document_processor.processor import (
-    process_document,
-    SUPPORTED_EXTENSIONS,
-)
-from rag.knowledge_base import ingest_document
+from document_processor.processor import process_document, SUPPORTED_EXTENSIONS
+from rag.knowledge_base import ingest_document, get_knowledge_base
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
 @router.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     original_name = Path(file.filename or "").name
     extension = Path(original_name).suffix.lower()
 
     if extension not in SUPPORTED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail="Only PDF, DOCX and TXT files are supported."
-        )
+        raise HTTPException(400, detail="Unsupported file type.")
 
     content = await file.read()
 
     if not content:
-        raise HTTPException(
-            status_code=400,
-            detail="The uploaded file is empty."
-        )
+        raise HTTPException(400, detail="Uploaded file is empty.")
 
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413,
-            detail="File size must not exceed 10 MB."
-        )
+        raise HTTPException(413, detail="File exceeds the 10 MB limit.")
 
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
     document_id = uuid.uuid4().hex
     saved_path = UPLOAD_DIR / f"{document_id}{extension}"
+    indexed_chunk_count = 0
 
     try:
         saved_path.write_bytes(content)
 
         result = process_document(str(saved_path))
 
-        # Automatically index the uploaded document.
         indexing_result = ingest_document(
             file_path=str(saved_path),
-            document_id=document_id
+            document_id=document_id,
+            user_id=current_user.id
         )
+
+        indexed_chunk_count = indexing_result["total_chunks"]
+
         db_document = Document(
             id=document_id,
+            user_id=current_user.id,
             filename=original_name,
             file_type=result["file_type"],
             character_count=result["character_count"],
-            total_chunks=indexing_result["total_chunks"]
+            total_chunks=indexed_chunk_count
         )
 
         db.add(db_document)
-        db.commit()
-        db.rollback()
+
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+            if indexed_chunk_count > 0:
+                _, vector_store = get_knowledge_base()
+                vector_store.remove_last_documents(indexed_chunk_count)
+                vector_store.save("learning_assistant")
+
+            raise
+
+        db.refresh(db_document)
+
         return {
             "document_id": document_id,
+            "user_id": current_user.id,
             "filename": original_name,
             "file_type": result["file_type"],
             "character_count": result["character_count"],
-            "total_chunks": indexing_result["total_chunks"],
-            "total_vectors": indexing_result["total_vectors"],
-            "preview": result["text"][:500],
-            "status": "uploaded and indexed successfully"
+            "total_chunks": indexed_chunk_count,
+            "status": "success"
         }
 
-    except (ValueError, FileNotFoundError) as error:
+    except HTTPException:
+        db.rollback()
         saved_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=400, detail=str(error))
+        raise
+
+    except ValueError as error:
+        db.rollback()
+        saved_path.unlink(missing_ok=True)
+        raise HTTPException(400, detail=str(error))
 
     except Exception:
+        db.rollback()
         saved_path.unlink(missing_ok=True)
         raise HTTPException(
-            status_code=500,
+            500,
             detail="Document processing or indexing failed."
         )
 

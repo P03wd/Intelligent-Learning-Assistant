@@ -5,6 +5,7 @@ from api.documents import router as documents_router
 from api.chat import router as chat_router
 from api.coding import router as coding_router
 from fastapi.middleware.cors import CORSMiddleware
+from api.auth import router as auth_router
 
 app = FastAPI(
     title=APP_NAME,
@@ -31,6 +32,8 @@ app.include_router(documents_router)
 app.include_router(chat_router)
 app.include_router(coding_router)
 app.include_router(personalization_router)
+app.include_router(auth_router)
+
 @app.get("/")
 def home():
     return {

@@ -33,10 +33,32 @@ class VectorStore:
         self.index.add(embeddings.astype("float32"))
         self.metadata.extend(chunks)
 
+    def remove_last_documents(self, count: int) -> None:
+        if count <= 0:
+            return
+
+        if count > len(self.metadata):
+            raise ValueError("Cannot remove more vectors than available.")
+
+        remaining_metadata = self.metadata[:-count]
+        remaining_embeddings = self.index.reconstruct_n(
+            0,
+            self.index.ntotal - count
+        )
+
+        new_index = faiss.IndexFlatIP(self.dimension)
+
+        if len(remaining_embeddings) > 0:
+            new_index.add(remaining_embeddings)
+
+        self.index = new_index
+        self.metadata = remaining_metadata
+
     def search(
         self,
         query_embedding: np.ndarray,
-        top_k: int = 3
+        top_k: int = 3,
+        user_id: int | None = None
     ) -> list[dict]:
 
         if self.index.ntotal == 0:
@@ -45,11 +67,14 @@ class VectorStore:
         if query_embedding.shape != (1, self.dimension):
             raise ValueError("Query embedding has an invalid shape.")
 
-        k = min(top_k, self.index.ntotal)
+        if user_id is None:
+            raise ValueError("User ID is required for document retrieval.")
 
+        # Search all vectors so another user's documents
+        # cannot hide relevant results belonging to this user.
         scores, indices = self.index.search(
             query_embedding.astype("float32"),
-            k
+            self.index.ntotal
         )
 
         results = []
@@ -59,8 +84,16 @@ class VectorStore:
                 continue
 
             result = self.metadata[int(index_id)].copy()
+
+            # Return only documents belonging to this user.
+            if result.get("user_id") != user_id:
+                continue
+
             result["similarity_score"] = float(score)
             results.append(result)
+
+            if len(results) >= top_k:
+                break
 
         return results
 

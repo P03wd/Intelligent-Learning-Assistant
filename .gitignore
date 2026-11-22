@@ -12,3 +12,5 @@ uploaded_documents/
 .neon
 node_modules/
 .env.local
+.env.*
+!.env.example

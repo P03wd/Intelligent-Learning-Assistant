@@ -1,8 +1,10 @@
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
 from coding_assistant.service import CodingAssistant
+from dependencies import get_current_user
+from models import User
 
 
 router = APIRouter(prefix="/coding", tags=["Coding Assistant"])
@@ -16,7 +18,10 @@ class CodingRequest(BaseModel):
 
 
 @router.post("/assist")
-def coding_assistance(request: CodingRequest):
+def coding_assistance(
+    request: CodingRequest,
+    current_user: User = Depends(get_current_user)
+):
 
     try:
         assistant = CodingAssistant()

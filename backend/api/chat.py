@@ -6,7 +6,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Conversation, ChatMessage
+from models import Conversation, ChatMessage, User
+from dependencies import get_current_user
 from rag.knowledge_base import search_knowledge_base
 from services.llm_service import LLMService
 
@@ -34,13 +35,14 @@ class ChatRequest(BaseModel):
 @router.post("/ask")
 def ask_question(
     request: ChatRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     try:
-        # Retrieve or create a conversation.
         if request.conversation_id is not None:
             conversation = db.query(Conversation).filter(
-                Conversation.id == request.conversation_id
+                Conversation.id == request.conversation_id,
+                Conversation.user_id == current_user.id
             ).first()
 
             if conversation is None:
@@ -49,11 +51,13 @@ def ask_question(
                     detail="Conversation not found."
                 )
         else:
-            conversation = Conversation(title=request.question[:100])
+            conversation = Conversation(
+                user_id=current_user.id,
+                title=request.question[:100]
+            )
             db.add(conversation)
             db.flush()
 
-        # Load recent conversation messages before retrieval.
         previous_messages = (
             db.query(ChatMessage)
             .filter(ChatMessage.conversation_id == conversation.id)
@@ -73,15 +77,12 @@ def ask_question(
             for message in reversed(previous_messages)
         ]
 
-        # Use supplied history only for a new conversation.
         if request.conversation_id is None and request.conversation_history:
             history = [
                 message.model_dump()
                 for message in request.conversation_history
             ]
 
-        # Build a retrieval query using previous user context
-        # for short follow-up questions.
         retrieval_query = request.question
 
         follow_up_phrases = (
@@ -120,25 +121,22 @@ def ask_question(
             if previous_user_questions:
                 retrieval_query = previous_user_questions[-1]
 
-                # Include the previous answer to preserve
-                # the subject of the follow-up.
                 if previous_assistant_answers:
                     retrieval_query += " " + previous_assistant_answers[-1]
 
                 retrieval_query += " " + request.question
 
-        # Retrieve relevant course content.
         retrieved_chunks = search_knowledge_base(
-            retrieval_query,
-            top_k=request.top_k
-        )
+    retrieval_query,
+    top_k=request.top_k,
+    user_id=current_user.id
+)
 
         relevant_chunks = [
             chunk for chunk in retrieved_chunks
             if chunk["similarity_score"] >= MIN_SIMILARITY_SCORE
         ]
 
-        # Generate a grounded answer using Groq.
         ai_service = LLMService()
 
         result = ai_service.generate_answer(
@@ -147,7 +145,6 @@ def ask_question(
             conversation_history=history
         )
 
-        # Save the question and answer.
         user_message = ChatMessage(
             conversation_id=conversation.id,
             role="user",
@@ -193,13 +190,14 @@ def ask_question(
         )
 
 
-# List all saved conversations.
 @router.get("/conversations")
 def list_conversations(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     conversations = (
         db.query(Conversation)
+        .filter(Conversation.user_id == current_user.id)
         .order_by(Conversation.created_at.desc())
         .all()
     )
@@ -218,14 +216,15 @@ def list_conversations(
     }
 
 
-# Retrieve an individual conversation and its messages.
 @router.get("/conversations/{conversation_id}")
 def get_conversation(
     conversation_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     conversation = db.query(Conversation).filter(
-        Conversation.id == conversation_id
+        Conversation.id == conversation_id,
+        Conversation.user_id == current_user.id
     ).first()
 
     if conversation is None:

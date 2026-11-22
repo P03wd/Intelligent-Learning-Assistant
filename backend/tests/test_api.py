@@ -1,13 +1,18 @@
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi.testclient import TestClient
 from main import app
+from dependencies import get_current_user
 
 client = TestClient(app)
+
+# Provide a test-only authenticated user for protected endpoints.
+app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=1)
 
 
 def test_home_endpoint():
@@ -33,6 +38,8 @@ def test_api_routes_registered():
     assert "/learning/performance" in paths
     assert "/learning/recommendations" in paths
     assert "/learning/adaptive-level" in paths
+
+
 def test_coding_assistant_invalid_language():
     response = client.post(
         "/coding/assist",
@@ -45,6 +52,8 @@ def test_coding_assistant_invalid_language():
     )
 
     assert response.status_code == 400
+
+
 def test_document_upload_rejects_invalid_file():
     response = client.post(
         "/documents/upload",

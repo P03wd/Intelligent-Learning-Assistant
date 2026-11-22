@@ -28,12 +28,13 @@ class User(Base):
 
     conversations = relationship("Conversation", back_populates="user")
     performances = relationship("LearningPerformance", back_populates="user")
-
+    documents = relationship("Document", back_populates="user")
 
 class Document(Base):
     __tablename__ = "documents"
 
     id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     filename = Column(String(255), nullable=False)
     file_type = Column(String(20), nullable=False)
     character_count = Column(Integer, default=0)
@@ -42,6 +43,8 @@ class Document(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc)
     )
+
+    user = relationship("User", back_populates="documents")
 
 
 class Conversation(Base):

@@ -1,16 +1,54 @@
-# React + Vite
+# Intelligent Learning Assistant - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React-based frontend for the ArchintX AI-Powered Intelligent Learning Assistant.
 
-Currently, two official plugins are available:
+## Features
+- User registration, login, and logout
+- AI chatbot with conversational follow-ups
+- Document upload and course-material Q&A
+- AI coding assistant for Python, C, C++, Java, and SQL
+- Personalized learning dashboard
+- Performance tracking and weak-topic identification
+- Adaptive learning recommendations
+- Personalized practice questions with answers and explanations
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Technology Stack
+- React
+- Vite
+- JavaScript
+- React Router
+- React Markdown
+- Recharts
+- Axios
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+From the `frontend` directory, install dependencies:
 
-## Expanding the Oxlint configuration
+```bash
+npm install
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+## Production Build
+
+```bash
+npm run build
+```
+
+The production files are generated in the `dist` directory.
+
+## Backend Connection
+
+The frontend communicates with the FastAPI backend using the `VITE_API_URL` environment variable.
+
+Default local backend URL:
+
+VITE_API_URL=http://127.0.0.1:8000

@@ -8,6 +8,7 @@ from rag.chunker import chunk_text
 def build_document_chunks(
     file_path: str,
     document_id: str = "",
+    user_id: int = 0,
     chunk_size: int = 1000,
     chunk_overlap: int = 150
 ) -> dict:
@@ -22,12 +23,13 @@ def build_document_chunks(
         chunk_overlap=chunk_overlap
     )
 
-    # Attach source information to every chunk.
+    # Attach source and ownership information to every chunk.
     chunk_records = []
 
     for index, content in enumerate(chunks):
         chunk_records.append({
             "document_id": document_id,
+            "user_id": user_id,
             "filename": document["filename"],
             "file_type": document["file_type"],
             "chunk_index": index,
@@ -36,6 +38,7 @@ def build_document_chunks(
 
     return {
         "document_id": document_id,
+        "user_id": user_id,
         "filename": document["filename"],
         "file_type": document["file_type"],
         "character_count": document["character_count"],

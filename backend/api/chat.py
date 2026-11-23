@@ -85,27 +85,8 @@ def ask_question(
 
         retrieval_query = request.question
 
-        follow_up_phrases = (
-            "explain that",
-            "explain this",
-            "tell me more",
-            "elaborate",
-            "in simple words",
-            "simplify that",
-            "what about that",
-            "can you explain",
-            "give an example",
-        )
-
-        is_follow_up = (
-            len(request.question.split()) <= 12
-            or any(
-                phrase in request.question.lower()
-                for phrase in follow_up_phrases
-            )
-        )
-
-        if is_follow_up and history:
+        # Use previous conversation context for follow-up retrieval.
+        if history:
             previous_user_questions = [
                 message["content"]
                 for message in history
@@ -127,10 +108,10 @@ def ask_question(
                 retrieval_query += " " + request.question
 
         retrieved_chunks = search_knowledge_base(
-    retrieval_query,
-    top_k=request.top_k,
-    user_id=current_user.id
-)
+            retrieval_query,
+            top_k=request.top_k,
+            user_id=current_user.id
+        )
 
         relevant_chunks = [
             chunk for chunk in retrieved_chunks

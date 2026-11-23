@@ -12,7 +12,11 @@ class LLMService:
                 "GROQ_API_KEY is missing. Check your .env file."
             )
 
-        self.client = Groq(api_key=GROQ_API_KEY)
+        self.client = Groq(
+    api_key=GROQ_API_KEY,
+    timeout=30.0,
+    max_retries=2
+)
         self.model = GROQ_MODEL
 
     def generate_answer(

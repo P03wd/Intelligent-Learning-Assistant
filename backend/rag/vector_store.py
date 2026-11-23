@@ -54,6 +54,27 @@ class VectorStore:
         self.index = new_index
         self.metadata = remaining_metadata
 
+    def remove_document(self, document_id: str) -> None:
+        keep_indices = [
+            i for i, item in enumerate(self.metadata)
+            if item.get("document_id") != document_id
+        ]
+
+        if len(keep_indices) == len(self.metadata):
+            return
+
+        embeddings = self.index.reconstruct_n(0, self.index.ntotal)
+        remaining_embeddings = embeddings[keep_indices]
+        remaining_metadata = [self.metadata[i] for i in keep_indices]
+
+        new_index = faiss.IndexFlatIP(self.dimension)
+
+        if len(remaining_embeddings) > 0:
+            new_index.add(remaining_embeddings)
+
+        self.index = new_index
+        self.metadata = remaining_metadata
+
     def search(
         self,
         query_embedding: np.ndarray,

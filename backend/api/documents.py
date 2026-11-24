@@ -1,21 +1,62 @@
 
 import uuid
+import mimetypes
 from pathlib import Path
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import (
+    APIRouter,
+    UploadFile,
+    File,
+    HTTPException,
+    Depends
+)
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Document, User
 from api.auth import get_current_user
 from config import UPLOAD_DIR
-from document_processor.processor import process_document, SUPPORTED_EXTENSIONS
+from document_processor.processor import (
+    process_document,
+    SUPPORTED_EXTENSIONS
+)
 from rag.knowledge_base import ingest_document, get_knowledge_base
 
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+def get_user_document_file(document_id, db, current_user):
+    document = db.query(Document).filter(
+        Document.id == document_id,
+        Document.user_id == current_user.id
+    ).first()
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found."
+        )
+
+    file_path = None
+
+    for extension in SUPPORTED_EXTENSIONS:
+        candidate = UPLOAD_DIR / f"{document_id}{extension}"
+
+        if candidate.is_file():
+            file_path = candidate
+            break
+
+    if file_path is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Original uploaded file not found."
+        )
+
+    return document, file_path
 
 
 @router.post("/upload")
@@ -177,3 +218,126 @@ def get_documents(
         }
         for document in documents
     ]
+
+
+@router.get("/{document_id}/preview")
+def preview_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    document, file_path = get_user_document_file(
+        document_id,
+        db,
+        current_user
+    )
+
+    media_type = mimetypes.guess_type(document.filename)[0]
+    media_type = media_type or "application/octet-stream"
+
+    return FileResponse(
+        path=file_path,
+        media_type=media_type,
+        filename=document.filename,
+        content_disposition_type="inline"
+    )
+
+
+@router.get("/{document_id}/download")
+def download_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    document, file_path = get_user_document_file(
+        document_id,
+        db,
+        current_user
+    )
+
+    media_type = mimetypes.guess_type(document.filename)[0]
+    media_type = media_type or "application/octet-stream"
+
+    return FileResponse(
+        path=file_path,
+        media_type=media_type,
+        filename=document.filename,
+        content_disposition_type="attachment"
+    )
+
+
+@router.delete("/{document_id}")
+def delete_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    document = db.query(Document).filter(
+        Document.id == document_id,
+        Document.user_id == current_user.id
+    ).first()
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found."
+        )
+
+    file_path = None
+
+    for extension in SUPPORTED_EXTENSIONS:
+        candidate = UPLOAD_DIR / f"{document_id}{extension}"
+
+        if candidate.exists():
+            file_path = candidate
+            break
+
+    vector_store = None
+    snapshot = None
+
+    try:
+        _, vector_store = get_knowledge_base()
+        snapshot = vector_store.create_snapshot()
+
+        vector_store.remove_document(document_id)
+        vector_store.save("learning_assistant")
+
+        db.delete(document)
+        db.commit()
+
+    except Exception as error:
+        db.rollback()
+
+        if vector_store is not None and snapshot is not None:
+            try:
+                vector_store.restore_snapshot(snapshot)
+                vector_store.save("learning_assistant")
+
+            except Exception as restore_error:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "Document deletion failed, and FAISS restoration "
+                        "also failed. The vector database requires recovery."
+                    )
+                ) from restore_error
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to delete document. Please try again."
+        ) from error
+
+    cleanup_pending = False
+
+    if file_path is not None:
+        try:
+            file_path.unlink(missing_ok=True)
+        except OSError:
+            cleanup_pending = True
+
+    return {
+        "document_id": document_id,
+        "message": "Document deleted successfully.",
+        "status": "success",
+        "file_cleanup_pending": cleanup_pending
+    }

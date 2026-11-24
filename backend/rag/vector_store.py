@@ -1,6 +1,6 @@
 
-from pathlib import Path
 import json
+import copy
 
 import faiss
 import numpy as np
@@ -63,9 +63,15 @@ class VectorStore:
         if len(keep_indices) == len(self.metadata):
             return
 
-        embeddings = self.index.reconstruct_n(0, self.index.ntotal)
+        embeddings = self.index.reconstruct_n(
+            0,
+            self.index.ntotal
+        )
+
         remaining_embeddings = embeddings[keep_indices]
-        remaining_metadata = [self.metadata[i] for i in keep_indices]
+        remaining_metadata = [
+            self.metadata[i] for i in keep_indices
+        ]
 
         new_index = faiss.IndexFlatIP(self.dimension)
 
@@ -74,6 +80,27 @@ class VectorStore:
 
         self.index = new_index
         self.metadata = remaining_metadata
+
+    def create_snapshot(self) -> tuple:
+        embeddings = self.index.reconstruct_n(
+            0,
+            self.index.ntotal
+        ).copy()
+
+        metadata = copy.deepcopy(self.metadata)
+
+        return embeddings, metadata
+
+    def restore_snapshot(self, snapshot: tuple) -> None:
+        embeddings, metadata = snapshot
+
+        new_index = faiss.IndexFlatIP(self.dimension)
+
+        if len(embeddings) > 0:
+            new_index.add(embeddings.astype("float32"))
+
+        self.index = new_index
+        self.metadata = copy.deepcopy(metadata)
 
     def search(
         self,
@@ -128,7 +155,12 @@ class VectorStore:
         faiss.write_index(self.index, str(index_path))
 
         with metadata_path.open("w", encoding="utf-8") as file:
-            json.dump(self.metadata, file, ensure_ascii=False, indent=2)
+            json.dump(
+                self.metadata,
+                file,
+                ensure_ascii=False,
+                indent=2
+            )
 
     def load(self, name: str = "learning_assistant") -> None:
 

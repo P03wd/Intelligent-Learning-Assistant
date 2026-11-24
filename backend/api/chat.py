@@ -229,6 +229,7 @@ def get_conversation(
         "title": conversation.title,
         "messages": [
             {
+                "message_id": message.id,
                 "role": message.role,
                 "content": message.content,
                 "created_at": message.created_at
@@ -237,3 +238,75 @@ def get_conversation(
         ],
         "status": "success"
     }
+
+@router.delete("/messages/{message_id}")
+def delete_chat_message(
+    message_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    message = (
+        db.query(ChatMessage)
+        .join(Conversation)
+        .filter(
+            ChatMessage.id == message_id,
+            Conversation.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if message is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Message not found."
+        )
+
+    try:
+        db.delete(message)
+        db.commit()
+
+        return {
+            "message": "Chat message deleted successfully.",
+            "status": "success"
+        }
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to delete chat message."
+        )
+
+
+@router.delete("/conversations/{conversation_id}")
+def delete_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.user_id == current_user.id
+    ).first()
+
+    if conversation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found."
+        )
+
+    try:
+        db.delete(conversation)
+        db.commit()
+
+        return {
+            "message": "Conversation and associated messages deleted successfully.",
+            "status": "success"
+        }
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to delete conversation."
+        )

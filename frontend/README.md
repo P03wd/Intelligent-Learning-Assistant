@@ -3,16 +3,40 @@
 React-based frontend for the ArchintX AI-Powered Intelligent Learning Assistant.
 
 ## Features
-- User registration, login, and logout
-- AI chatbot with conversational follow-ups
-- Document upload and course-material Q&A
-- AI coding assistant for Python, C, C++, Java, and SQL
-- Personalized learning dashboard
-- Performance tracking and weak-topic identification
-- Adaptive learning recommendations
-- Personalized practice questions with answers and explanations
+
+### Authentication
+- User registration and login.
+- JWT-based authenticated API communication.
+- Logout functionality.
+
+### AI Chatbot
+- Conversational AI chatbot.
+- Follow-up questions with conversation context.
+- Chat history.
+- Selection-based deletion of conversations and individual messages.
+
+### Document Management
+- Upload PDF, DOCX, and TXT learning materials.
+- View uploaded document information.
+- Preview uploaded documents.
+- Download uploaded documents.
+- Delete uploaded documents.
+- Course-material question answering.
+
+### AI Coding Assistant
+- Programming assistance for Python, C, C++, Java, and SQL.
+- Code explanations and debugging suggestions.
+- Code examples and practice questions.
+
+### Personalized Learning
+- Personalized learning dashboard.
+- Performance tracking.
+- Weak-topic identification.
+- Adaptive learning recommendations.
+- Personalized practice questions with answers and explanations.
 
 ## Technology Stack
+
 - React
 - Vite
 - JavaScript
@@ -21,34 +45,87 @@ React-based frontend for the ArchintX AI-Powered Intelligent Learning Assistant.
 - Recharts
 - Axios
 
-## Setup
+## Project Structure
 
-From the `frontend` directory, install dependencies:
+```text
+frontend/
+├── src/
+│   ├── pages/
+│   ├── services/
+│   ├── App.jsx
+│   └── App.css
+├── public/
+├── package.json
+└── README.md
+```
 
-```bash
+## Installation and Setup
+
+### Prerequisites
+- Node.js
+- npm
+- Running FastAPI backend
+
+### 1. Install Dependencies
+
+From the frontend directory:
+
+```cmd
 npm install
 ```
 
-Start the development server:
+### 2. Configure Backend URL
 
-```bash
+Create a `.env` file inside the frontend directory:
+
+```env
+VITE_API_URL=http://127.0.0.1:8000
+```
+
+For production, configure `VITE_API_URL` with the deployed backend URL in the Vercel project environment variables.
+
+### 3. Start Development Server
+
+```cmd
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+Open:
+
+http://localhost:5173
 
 ## Production Build
 
-```bash
+Run:
+
+```cmd
 npm run build
 ```
 
-The production files are generated in the `dist` directory.
+The production-ready files are generated in the `dist` directory.
 
 ## Backend Connection
 
-The frontend communicates with the FastAPI backend using the `VITE_API_URL` environment variable.
+The frontend communicates with the FastAPI backend through Axios.
 
-Default local backend URL:
+Default local backend:
 
-VITE_API_URL=http://127.0.0.1:8000
+http://127.0.0.1:8000
+
+API documentation:
+
+http://127.0.0.1:8000/docs
+
+The Axios API client automatically attaches the JWT access token to authenticated requests.
+
+## Deployment
+
+Production frontend:
+
+https://intelligent-learning-assistant-amber.vercel.app
+
+Backend API:
+
+https://intelligent-learning-assistant-u0ad.onrender.com
+
+The frontend is deployed using Vercel and communicates with the deployed FastAPI backend.
